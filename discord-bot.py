@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from tpblite import TPB
 from seedrcc import Login, Seedr
 from dotenv import load_dotenv
 import os
@@ -39,7 +38,13 @@ def seedr_login():
 def add_torrent_to_seedr(magnet_link, seedr):
     try:
         response = seedr.addTorrent(magnet_link)
-        return response
+        logging.info(f"Seedr response: {response}")
+        if 'error' not in response:
+            folder_id = response['folder_id']
+            folder_contents = seedr.getFolderContents(folder_id)
+            return folder_contents
+        else:
+            return response
     except Exception as e:
         logging.error(f"Failed to add torrent to Seedr: {e}")
         return {'error': str(e)}
@@ -66,6 +71,7 @@ async def search(ctx, *, query):
 
 @bot.event
 async def on_reaction_add(reaction, user):
+    logging.info(f"Reaction added: {reaction.emoji} by {user.name}")
     if reaction.emoji == '📋' and not user.bot:
         magnet_link = reaction.message.content.split('**Magnet**: ')[1]
         await reaction.message.channel.send(f"{user.mention} copied: {magnet_link}")
@@ -75,7 +81,9 @@ async def on_reaction_add(reaction, user):
         if seedr:
             response = add_torrent_to_seedr(magnet_link, seedr)
             if 'error' not in response:
-                await reaction.message.channel.send(f"{user.mention} mirrored to Seedr: {response['title']}")
+                logging.info(f"Mirrored to Seedr: {response}")
+                file_links = [f"{file['name']}: {file['url']}" for file in response['files']]
+                await reaction.message.channel.send(f"{user.mention} mirrored to Seedr:\n" + "\n".join(file_links))
             else:
                 await reaction.message.channel.send(f"{user.mention} failed to mirror to Seedr: {response['error']}")
         else:
