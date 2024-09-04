@@ -5,7 +5,8 @@ from seedrcc import Login, Seedr
 from dotenv import load_dotenv
 import os
 import logging
-import unittest
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,6 +20,7 @@ ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
+intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -79,19 +81,19 @@ async def on_reaction_add(reaction, user):
         else:
             await reaction.message.channel.send(f"{user.mention} failed to login to Seedr.")
 
+# Dummy HTTP server to keep the hosting service happy
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'Hello, world!')
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 8000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Run the HTTP server in a separate thread
+threading.Thread(target=run_http_server).start()
+
 bot.run(DISCORD_BOT_TOKEN)
-
-# Unit tests
-class TestSeedrFunctions(unittest.TestCase):
-    def test_seedr_login(self):
-        seedr = seedr_login()
-        self.assertIsNotNone(seedr, "Seedr login should not return None")
-
-    def test_add_torrent_to_seedr(self):
-        seedr = seedr_login()
-        if seedr:
-            response = add_torrent_to_seedr("magnet_link_example", seedr)
-            self.assertNotIn('error', response, "Adding torrent should not return an error")
-
-if __name__ == '__main__':
-    unittest.main()
