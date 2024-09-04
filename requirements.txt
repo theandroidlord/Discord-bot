@@ -1,0 +1,5 @@
+discord.py
+tpblite
+requests
+seedrcc
+python-dotenv
