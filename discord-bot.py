@@ -4,17 +4,6 @@ from tpblite import TPB
 from dotenv import load_dotenv
 import os
 import logging
-import http.server
-import socketserver
-import os
-
-PORT = int(os.environ.get('PORT', 8080))  # Default to 8080 if PORT is not set
-
-Handler = http.server.SimpleHTTPRequestHandler
-
-with socketserver.TCPServer(("", PORT), Handler) as httpd:
-    print(f"Serving at port {PORT}")
-    httpd.serve_forever()
     
 
 # Load environment variables from .env file
