@@ -3,6 +3,7 @@ from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
 import os
+import flask
 import logging
 from flask import Flask
 
