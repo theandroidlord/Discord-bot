@@ -105,12 +105,14 @@ async def stop(ctx):
 
 @bot.command()
 async def ai(ctx, *, query):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=query,
-        max_tokens=150
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": query}
+        ]
     )
-    await ctx.send(response.choices[0].text.strip())
+    await ctx.send(response.choices[0].message['content'].strip())
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
