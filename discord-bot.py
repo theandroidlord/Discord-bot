@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
-from transformers import pipeline
+import requests
 import os
 import logging
 from threading import Thread
@@ -13,10 +13,8 @@ import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
-
-# Initialize the Hugging Face pipeline
-generator = pipeline('text-generation', model='gpt2')
 
 # Define intents
 intents = discord.Intents.default()
@@ -104,8 +102,21 @@ async def stop(ctx):
 
 @bot.command()
 async def ai(ctx, *, query):
-    response = generator(query, max_length=150, num_return_sequences=1)
-    await ctx.send(response[0]['generated_text'].strip())
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}"
+    }
+    data = {
+        "inputs": query,
+        "parameters": {"max_length": 150},
+        "options": {"wait_for_model": True}
+    }
+    response = requests.post(
+        "https://api-inference.huggingface.co/models/gpt2",
+        headers=headers,
+        json=data
+    )
+    result = response.json()
+    await ctx.send(result[0]['generated_text'].strip())
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
