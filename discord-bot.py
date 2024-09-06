@@ -14,6 +14,7 @@ load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OMDB_API_KEY = os.getenv('OMDB_API_KEY')
+MOVIESDB_API_KEY = os.getenv('MOVIESDB_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
 
 # Define intents
@@ -115,16 +116,16 @@ async def movieinfo(ctx, *, movie_name):
         actors = omdb_data['Actors']
         poster = omdb_data['Poster']
 
-        youtube_search_url = f"https://www.youtube.com/results?search_query={title} trailer"
-        youtube_response = requests.get(youtube_search_url)
-        youtube_data = youtube_response.text
+        moviesdb_url = f"https://moviesdatabase.p.rapidapi.com/titles/search/title/{title}?info=trailers"
+        headers = {
+            "X-RapidAPI-Key": MOVIESDB_API_KEY,
+            "X-RapidAPI-Host": "moviesdatabase.p.rapidapi.com"
+        }
+        moviesdb_response = requests.get(moviesdb_url, headers=headers)
+        moviesdb_data = moviesdb_response.json()
 
-        # Extract the first video URL from the search results
-        start_index = youtube_data.find('/watch?v=')
-        if start_index != -1:
-            end_index = youtube_data.find('"', start_index)
-            video_id = youtube_data[start_index:end_index]
-            trailer_url = f"https://www.youtube.com{video_id}"
+        if 'results' in moviesdb_data and moviesdb_data['results']:
+            trailer_url = moviesdb_data['results'][0]['youtubeTrailerUrl']
         else:
             trailer_url = "Trailer not found."
 
