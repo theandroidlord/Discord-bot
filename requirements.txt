@@ -4,4 +4,4 @@ requests
 python-dotenv
 speedtest-cli
 pynacl
-openai
+openai==0.28
