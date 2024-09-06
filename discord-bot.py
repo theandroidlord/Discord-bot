@@ -13,6 +13,7 @@ import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+OMDB_API_KEY = os.getenv('OMDB_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
 
 # Define intents
@@ -100,8 +101,8 @@ async def stop(ctx):
         await ctx.send("The bot is not connected to a voice channel.")
 
 @bot.command()
-async def imdb(ctx, *, movie_name):
-    url = f"https://www.omdbapi.com/?t={movie_name}&apikey=http://www.omdbapi.com/?i=tt3896198&apikey=a75d43cf"
+async def movieinfo(ctx, *, movie_name):
+    url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
     response = requests.get(url)
     data = response.json()
 
