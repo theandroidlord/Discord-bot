@@ -3,20 +3,9 @@ from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
 import os
-import flask
 import logging
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route('/')
-def hello():
-    return "Hello, Render!"
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-    
+from threading import Thread
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Load environment variables from .env file
 load_dotenv()
@@ -61,4 +50,22 @@ async def on_reaction_add(reaction, user):
         magnet_link = reaction.message.content.split('**Magnet**: ')[1]
         await reaction.message.channel.send(f"{user.mention} copied: {magnet_link}")
 
+# Simple HTTP server to satisfy Render's port binding requirement
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'Hello, Render!')
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 5000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# Run HTTP server in a separate thread
+http_thread = Thread(target=run_http_server)
+http_thread.start()
+
+# Run the Discord bot
 bot.run(DISCORD_BOT_TOKEN)
