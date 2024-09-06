@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
+import requests
 import os
 import logging
 from threading import Thread
@@ -97,6 +98,30 @@ async def stop(ctx):
         await ctx.send("Stopped streaming.")
     else:
         await ctx.send("The bot is not connected to a voice channel.")
+
+@bot.command()
+async def imdb(ctx, *, movie_name):
+    url = f"https://www.omdbapi.com/?t={movie_name}&apikey=your_omdb_api_key"
+    response = requests.get(url)
+    data = response.json()
+
+    if data['Response'] == 'True':
+        title = data['Title']
+        year = data['Year']
+        rating = data['imdbRating']
+        plot = data['Plot']
+        director = data['Director']
+        actors = data['Actors']
+
+        embed = discord.Embed(title=title, description=plot, color=0x00ff00)
+        embed.add_field(name="Year", value=year, inline=True)
+        embed.add_field(name="IMDb Rating", value=rating, inline=True)
+        embed.add_field(name="Director", value=director, inline=True)
+        embed.add_field(name="Actors", value=actors, inline=True)
+
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(f"Movie '{movie_name}' not found.")
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
