@@ -13,7 +13,7 @@ import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')
+COHERE_API_KEY = os.getenv('COHERE_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
 
 # Define intents
@@ -103,20 +103,21 @@ async def stop(ctx):
 @bot.command()
 async def ai(ctx, *, query):
     headers = {
-        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}"
+        "Authorization": f"Bearer {COHERE_API_KEY}"
     }
     data = {
-        "inputs": query,
-        "parameters": {"max_length": 150},
-        "options": {"wait_for_model": True}
+        "model": "xlarge",
+        "prompt": query,
+        "max_tokens": 150,
+        "temperature": 0.75
     }
     response = requests.post(
-        "https://api-inference.huggingface.co/models/gpt2",
+        "https://api.cohere.ai/generate",
         headers=headers,
         json=data
     )
     result = response.json()
-    await ctx.send(result[0]['generated_text'].strip())
+    await ctx.send(result['generations'][0]['text'].strip())
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
