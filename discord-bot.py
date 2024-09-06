@@ -124,7 +124,6 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed)
     else:
         await ctx.send("Movie not found.")
-)
  
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
