@@ -4,4 +4,5 @@ requests
 python-dotenv
 speedtest-cli
 pynacl
-openai==0.28
+transformers
+torch

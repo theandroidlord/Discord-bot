@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
-import openai
+from transformers import pipeline
 import os
 import logging
 from threading import Thread
@@ -13,11 +13,10 @@ import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
 
-# Initialize the OpenAI API
-openai.api_key = OPENAI_API_KEY
+# Initialize the Hugging Face pipeline
+generator = pipeline('text-generation', model='gpt2')
 
 # Define intents
 intents = discord.Intents.default()
@@ -105,14 +104,8 @@ async def stop(ctx):
 
 @bot.command()
 async def ai(ctx, *, query):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": query}
-        ]
-    )
-    await ctx.send(response.choices[0].message['content'].strip())
+    response = generator(query, max_length=150, num_return_sequences=1)
+    await ctx.send(response[0]['generated_text'].strip())
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
