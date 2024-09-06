@@ -115,10 +115,18 @@ async def movieinfo(ctx, *, movie_name):
         actors = omdb_data['Actors']
         poster = omdb_data['Poster']
 
-        youtube_search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={title} trailer&type=video&key=your_youtube_api_key"
+        youtube_search_url = f"https://www.youtube.com/results?search_query={title} trailer"
         youtube_response = requests.get(youtube_search_url)
-        youtube_data = youtube_response.json()
-        trailer_url = f"https://www.youtube.com/watch?v={youtube_data['items'][0]['id']['videoId']}"
+        youtube_data = youtube_response.text
+
+        # Extract the first video URL from the search results
+        start_index = youtube_data.find('/watch?v=')
+        if start_index != -1:
+            end_index = youtube_data.find('"', start_index)
+            video_id = youtube_data[start_index:end_index]
+            trailer_url = f"https://www.youtube.com{video_id}"
+        else:
+            trailer_url = "Trailer not found."
 
         embed = discord.Embed(title=title, description=plot, color=0x00ff00)
         embed.set_image(url=poster)
