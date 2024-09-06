@@ -101,7 +101,7 @@ async def stop(ctx):
 
 @bot.command()
 async def imdb(ctx, *, movie_name):
-    url = f"https://www.omdbapi.com/?t={movie_name}&apikey=your_omdb_api_key"
+    url = f"https://www.omdbapi.com/?t={movie_name}&apikey=http://www.omdbapi.com/?i=tt3896198&apikey=a75d43cf"
     response = requests.get(url)
     data = response.json()
 
