@@ -113,8 +113,10 @@ async def movieinfo(ctx, *, movie_name):
         plot = data['Plot']
         director = data['Director']
         actors = data['Actors']
+        poster = data['Poster']
 
         embed = discord.Embed(title=title, description=plot, color=0x00ff00)
+        embed.set_image(url=poster)
         embed.add_field(name="Year", value=year, inline=True)
         embed.add_field(name="IMDb Rating", value=rating, inline=True)
         embed.add_field(name="Director", value=director, inline=True)
