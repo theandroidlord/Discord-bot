@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from tpblite import TPB
 from dotenv import load_dotenv
+import openai
 import os
 import logging
 from threading import Thread
@@ -12,7 +13,11 @@ import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
+
+# Initialize the OpenAI API
+openai.api_key = OPENAI_API_KEY
 
 # Define intents
 intents = discord.Intents.default()
@@ -97,6 +102,15 @@ async def stop(ctx):
         await ctx.send("Stopped streaming.")
     else:
         await ctx.send("The bot is not connected to a voice channel.")
+
+@bot.command()
+async def ai(ctx, *, query):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=query,
+        max_tokens=150
+    )
+    await ctx.send(response.choices[0].text.strip())
 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
