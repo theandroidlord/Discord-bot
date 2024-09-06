@@ -3,3 +3,4 @@ tpblite
 requests
 python-dotenv
 speedtest-cli
+pynacl
