@@ -130,3 +130,22 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed, view=view)
     else:
         await ctx.send("Movie not found.")
+# Simple HTTP server to satisfy Render's port binding requirement
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'Hello, Render!')
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 5000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# Run HTTP server in a separate thread
+http_thread = Thread(target=run_http_server)
+http_thread.start()
+
+# Run the Discord bot
+bot.run(DISCORD_BOT_TOKEN)
