@@ -102,18 +102,23 @@ async def stop(ctx):
 
 @bot.command()
 async def movieinfo(ctx, *, movie_name):
-    url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
-    response = requests.get(url)
-    data = response.json()
+    omdb_url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
+    omdb_response = requests.get(omdb_url)
+    omdb_data = omdb_response.json()
 
-    if data['Response'] == 'True':
-        title = data['Title']
-        year = data['Year']
-        rating = data['imdbRating']
-        plot = data['Plot']
-        director = data['Director']
-        actors = data['Actors']
-        poster = data['Poster']
+    if omdb_data['Response'] == 'True':
+        title = omdb_data['Title']
+        year = omdb_data['Year']
+        rating = omdb_data['imdbRating']
+        plot = omdb_data['Plot']
+        director = omdb_data['Director']
+        actors = omdb_data['Actors']
+        poster = omdb_data['Poster']
+
+        youtube_search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={title} trailer&type=video&key=your_youtube_api_key"
+        youtube_response = requests.get(youtube_search_url)
+        youtube_data = youtube_response.json()
+        trailer_url = f"https://www.youtube.com/watch?v={youtube_data['items'][0]['id']['videoId']}"
 
         embed = discord.Embed(title=title, description=plot, color=0x00ff00)
         embed.set_image(url=poster)
@@ -121,6 +126,7 @@ async def movieinfo(ctx, *, movie_name):
         embed.add_field(name="IMDb Rating", value=rating, inline=True)
         embed.add_field(name="Director", value=director, inline=True)
         embed.add_field(name="Actors", value=actors, inline=True)
+        embed.add_field(name="Trailer", value=f"Watch Trailer", inline=True)
 
         await ctx.send(embed=embed)
     else:
