@@ -2,3 +2,4 @@ discord.py
 tpblite
 requests
 python-dotenv
+speedtest-cli
