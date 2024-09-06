@@ -6,7 +6,7 @@ import os
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import speedtest
+import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,7 +49,7 @@ async def speedtest(ctx):
     await ctx.send("Running speed test... This may take a few seconds.")
     
     try:
-        st = speedtest.Speedtest()
+        st = speedtest_module.Speedtest()  # Use the renamed import
         st.get_best_server()
         download_speed = st.download() / 10**6  # Convert from bits to megabits
         upload_speed = st.upload() / 10**6      # Convert from bits to megabits
