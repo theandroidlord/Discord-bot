@@ -6,6 +6,7 @@ import os
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import speedtest
 
 # Load environment variables from .env file
 load_dotenv()
@@ -42,6 +43,28 @@ async def search(ctx, *, query):
             await message.add_reaction('📋')  # Add a clipboard emoji reaction
     else:
         await ctx.send("No torrents found.")
+
+@bot.command()
+async def speedtest(ctx):
+    await ctx.send("Running speed test... This may take a few seconds.")
+    
+    try:
+        st = speedtest.Speedtest()
+        st.get_best_server()
+        download_speed = st.download() / 10**6  # Convert from bits to megabits
+        upload_speed = st.upload() / 10**6      # Convert from bits to megabits
+        ping = st.results.ping
+
+        result = (
+            f"**Speed Test Results:**\n"
+            f"**Download Speed:** {download_speed:.2f} Mbps\n"
+            f"**Upload Speed:** {upload_speed:.2f} Mbps\n"
+            f"**Ping:** {ping} ms"
+        )
+        await ctx.send(result)
+
+    except Exception as e:
+        await ctx.send(f"An error occurred during the speed test: {str(e)}")
 
 @bot.event
 async def on_reaction_add(reaction, user):
