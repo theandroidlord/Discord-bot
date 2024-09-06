@@ -101,29 +101,32 @@ async def stop(ctx):
         await ctx.send("The bot is not connected to a voice channel.")
  
 @bot.command()
-async def movieinfo(ctx, *, movie_name):
-    url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
-    response = requests.get(url)
-    data = response.json()
-
-    if data['Response'] == 'True':
-        title = data['Title']
-        year = data['Year']
-        rating = data['imdbRating']
-        plot = data['Plot']
-        director = data['Director']
-        actors = data['Actors']
-        poster = data['Poster']
-
-        embed = discord.Embed(title=title, description=plot, color=0x00ff00)
-        embed.set_image(url=poster)
-        embed.add_field(name="Year", value=year, inline=True)
-        embed.add_field(name="IMDb Rating", value=rating, inline=True)
-        embed.add_field(name="Director", value=director, inline=True)
-        embed.add_field(name="Actors", value=actors, inline=True)
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Movie not found.")
+  async def movieinfo(ctx, *, movie_name):
+      url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
+      response = requests.get(url)
+      data = response.json()
+  
+      if data['Response'] == 'True':
+          title = data['Title']
+          year = data['Year']
+          rating = data['imdbRating']
+          plot = data['Plot']
+          director = data['Director']
+          actors = data['Actors']
+          poster = data['Poster']
+          trailer_url = f"https://www.youtube.com/results?search_query={movie_name.replace(' ', '+')}+trailer"
+  
+          embed = discord.Embed(title=title, description=plot, color=0x00ff00)
+          embed.set_image(url=poster)
+          embed.add_field(name="Year", value=year, inline=True)
+          embed.add_field(name="IMDb Rating", value=rating, inline=True)
+          embed.add_field(name="Director", value=director, inline=True)
+          embed.add_field(name="Actors", value=actors, inline=True)
+          embed.add_field(name="Watch Trailer", value=f"Click Here", inline=False)
+          await ctx.send(embed=embed)
+      else:
+          await ctx.send("Movie not found.")
+  
  
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
