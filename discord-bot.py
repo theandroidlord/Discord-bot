@@ -8,36 +8,35 @@ import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import speedtest as speedtest_module  # Renaming the import to avoid conflicts
-
+ 
 # Load environment variables from .env file
 load_dotenv()
-
+ 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OMDB_API_KEY = os.getenv('OMDB_API_KEY')
-MOVIESDB_API_KEY = os.getenv('MOVIESDB_API_KEY')
 ALLOWED_SERVERS = os.getenv('ALLOWED_SERVERS').split(',')
-
+ 
 # Define intents
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
 intents.message_content = True
-
+ 
 bot = commands.Bot(command_prefix='!', intents=intents)
-
+ 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
-
+ 
 @bot.event
 async def on_ready():
     logging.info(f'Logged in as {bot.user}')
-
+ 
 @bot.command()
 async def search(ctx, *, query):
     if str(ctx.guild.id) not in ALLOWED_SERVERS:
         await ctx.send("This bot is not allowed to operate in this server.")
         return
-
+ 
     tpb = TPB()
     torrents = tpb.search(query)
     if torrents:
@@ -46,18 +45,18 @@ async def search(ctx, *, query):
             await message.add_reaction('📋')  # Add a clipboard emoji reaction
     else:
         await ctx.send("No torrents found.")
-
+ 
 @bot.command()
 async def speedtest(ctx):
     await ctx.send("Running speed test... This may take a few seconds.")
-    
+ 
     try:
         st = speedtest_module.Speedtest()  # Use the renamed import
         st.get_best_server()
         download_speed = st.download() / 10**6  # Convert from bits to megabits
         upload_speed = st.upload() / 10**6      # Convert from bits to megabits
         ping = st.results.ping
-
+ 
         result = (
             f"**Speed Test Results:**\n"
             f"**Download Speed:** {download_speed:.2f} Mbps\n"
@@ -65,34 +64,34 @@ async def speedtest(ctx):
             f"**Ping:** {ping} ms"
         )
         await ctx.send(result)
-
+ 
     except Exception as e:
         await ctx.send(f"An error occurred during the speed test: {str(e)}")
-
+ 
 @bot.event
 async def on_reaction_add(reaction, user):
     logging.info(f"Reaction added: {reaction.emoji} by {user.name}")
     if reaction.emoji == '📋' and not user.bot:
         magnet_link = reaction.message.content.split('**Magnet**: ')[1]
         await reaction.message.channel.send(f"{user.mention} copied: {magnet_link}")
-
+ 
 @bot.command()
 async def stream(ctx, url: str):
     if ctx.author.voice is None:
         await ctx.send("You are not connected to a voice channel.")
         return
-
+ 
     channel = ctx.author.voice.channel
     voice_client = await channel.connect()
-
+ 
     FFMPEG_OPTIONS = {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
         'options': '-vn'
     }
-
+ 
     voice_client.play(discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS))
     await ctx.send(f'Streaming: {url}')
-
+ 
 @bot.command()
 async def stop(ctx):
     if ctx.voice_client:
@@ -100,34 +99,21 @@ async def stop(ctx):
         await ctx.send("Stopped streaming.")
     else:
         await ctx.send("The bot is not connected to a voice channel.")
-
+ 
 @bot.command()
 async def movieinfo(ctx, *, movie_name):
-    omdb_url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
-    omdb_response = requests.get(omdb_url)
-    omdb_data = omdb_response.json()
+    url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
+    response = requests.get(url)
+    data = response.json()
 
-    if omdb_data['Response'] == 'True':
-        title = omdb_data['Title']
-        year = omdb_data['Year']
-        rating = omdb_data['imdbRating']
-        plot = omdb_data['Plot']
-        director = omdb_data['Director']
-        actors = omdb_data['Actors']
-        poster = omdb_data['Poster']
-
-        moviesdb_url = f"https://moviesdatabase.p.rapidapi.com/titles/search/title/{title}?info=trailers"
-        headers = {
-            "X-RapidAPI-Key": MOVIESDB_API_KEY,
-            "X-RapidAPI-Host": "moviesdatabase.p.rapidapi.com"
-        }
-        moviesdb_response = requests.get(moviesdb_url, headers=headers)
-        moviesdb_data = moviesdb_response.json()
-
-        if 'results' in moviesdb_data and moviesdb_data['results']:
-            trailer_url = moviesdb_data['results'][0]['youtubeTrailerUrl']
-        else:
-            trailer_url = "Trailer not found."
+    if data['Response'] == 'True':
+        title = data['Title']
+        year = data['Year']
+        rating = data['imdbRating']
+        plot = data['Plot']
+        director = data['Director']
+        actors = data['Actors']
+        poster = data['Poster']
 
         embed = discord.Embed(title=title, description=plot, color=0x00ff00)
         embed.set_image(url=poster)
@@ -135,12 +121,11 @@ async def movieinfo(ctx, *, movie_name):
         embed.add_field(name="IMDb Rating", value=rating, inline=True)
         embed.add_field(name="Director", value=director, inline=True)
         embed.add_field(name="Actors", value=actors, inline=True)
-        embed.add_field(name="Trailer", value=f"Watch Trailer", inline=True)
-
         await ctx.send(embed=embed)
     else:
-        await ctx.send(f"Movie '{movie_name}' not found.")
-
+        await ctx.send("Movie not found.")
+)
+ 
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -148,15 +133,15 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.wfile.write(b'Hello, Render!')
-
+ 
 def run_http_server():
     port = int(os.environ.get("PORT", 5000))
     server = HTTPServer(('0.0.0.0', port), SimpleHandler)
     server.serve_forever()
-
+ 
 # Run HTTP server in a separate thread
 http_thread = Thread(target=run_http_server)
 http_thread.start()
-
+ 
 # Run the Discord bot
 bot.run(DISCORD_BOT_TOKEN)
