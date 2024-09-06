@@ -73,6 +73,31 @@ async def on_reaction_add(reaction, user):
         magnet_link = reaction.message.content.split('**Magnet**: ')[1]
         await reaction.message.channel.send(f"{user.mention} copied: {magnet_link}")
 
+@bot.command()
+async def stream(ctx, url: str):
+    if ctx.author.voice is None:
+        await ctx.send("You are not connected to a voice channel.")
+        return
+
+    channel = ctx.author.voice.channel
+    voice_client = await channel.connect()
+
+    FFMPEG_OPTIONS = {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'options': '-vn'
+    }
+
+    voice_client.play(discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS))
+    await ctx.send(f'Streaming: {url}')
+
+@bot.command()
+async def stop(ctx):
+    if ctx.voice_client:
+        await ctx.voice_client.disconnect()
+        await ctx.send("Stopped streaming.")
+    else:
+        await ctx.send("The bot is not connected to a voice channel.")
+
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
