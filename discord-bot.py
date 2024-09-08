@@ -132,13 +132,6 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed, view=view)
     else:
         await ctx.send("Movie not found.")
-# Simple HTTP server to satisfy Render's port binding requirement
-class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(b'Hello, Render!')
         
 # Connect to qBittorrent client
 qb = qbittorrentapi.Client(host='localhost', port=8080)
@@ -160,8 +153,12 @@ def upload_to_smash(file_path):
         response = requests.post(url, files={'file': f})
     return response.json().get('url')
 
+# Define intents
+intents = discord.Intents.default()
+intents.message_content = True  # Enable the intent for message content
+
 # Discord bot setup
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
@@ -181,8 +178,15 @@ async def mirror(ctx, magnet_link):
         link = upload_to_smash(file_path)
         await ctx.send(f"File uploaded! Download link: {link}")
 
-# Run the bot
-bot.run('YOUR_DISCORD_BOT_TOKEN')
+# Simple HTTP server to satisfy Render's port binding requirement
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'Hello, Render!')
+        
+
 
 
 def run_http_server():
