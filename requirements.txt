@@ -4,5 +4,3 @@ python-dotenv
 requests
 speedtest-cli
 pynacl
-qbittorrent-api
-tqdm
