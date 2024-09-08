@@ -5,3 +5,4 @@ requests
 speedtest-cli
 pynacl
 qbittorrent-api
+tqdm
