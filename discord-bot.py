@@ -7,7 +7,6 @@ import requests
 import os
 import qbittorrentapi
 import time
-from tqdm import tqdm
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -134,42 +133,6 @@ async def movieinfo(ctx, *, movie_name):
     else:
         await ctx.send("Movie not found.")
         
-
-# Connect to qBittorrent client
-qb = qbittorrentapi.Client(host='localhost', port=8080)
-
-# Function to download magnet link
-def download_magnet(magnet_link, save_path):
-    qb.torrents_add(urls=magnet_link, save_path=save_path)
-    while True:
-        torrents = qb.torrents_info()
-        for torrent in torrents:
-            print(f"Torrent {torrent.name} is in state {torrent.state}")
-        if all(torrent.state == 'uploading' for torrent in torrents):
-            break
-        time.sleep(5)
-    return [torrent.name for torrent in torrents]
-
-# Function to upload file to Smash
-def upload_to_smash(file_path):
-    url = 'https://fromsmash.com/upload'
-    with open(file_path, 'rb') as f:
-        response = requests.post(url, files={'file': f})
-    return response.json().get('url')
-
-@bot.command()
-async def mirror(ctx, magnet_link):
-    save_path = './downloads'
-    os.makedirs(save_path, exist_ok=True)
-
-    await ctx.send("Downloading magnet link...")
-    downloaded_files = download_magnet(magnet_link, save_path)
-    
-    for file_name in downloaded_files:
-        file_path = os.path.join(save_path, file_name)
-        await ctx.send(f"Uploading {file_path} to Smash...")
-        link = upload_to_smash(file_path)
-        await ctx.send(f"File uploaded! Download link: {link}")
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
