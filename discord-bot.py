@@ -153,16 +153,6 @@ def upload_to_smash(file_path):
         response = requests.post(url, files={'file': f})
     return response.json().get('url')
 
-# Define intents
-intents = discord.Intents.default()
-intents.message_content = True  # Enable the intent for message content
-
-# Discord bot setup
-bot = commands.Bot(command_prefix='!', intents=intents)
-
-@bot.event
-async def on_ready():
-    print(f'Logged in as {bot.user}')
 
 @bot.command()
 async def mirror(ctx, magnet_link):
