@@ -5,6 +5,7 @@ from tpblite import TPB
 from dotenv import load_dotenv
 import requests
 import os
+import time
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -137,6 +138,51 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.wfile.write(b'Hello, Render!')
+        
+# Connect to qBittorrent client
+qb = qbittorrentapi.Client(host='localhost', port=8080)
+
+# Function to download magnet link
+def download_magnet(magnet_link, save_path):
+    qb.torrents_add(urls=magnet_link, save_path=save_path)
+    while True:
+        torrents = qb.torrents_info()
+        if all(torrent.state == 'uploading' for torrent in torrents):
+            break
+        time.sleep(5)
+    return [torrent.name for torrent in torrents]
+
+# Function to upload file to Smash
+def upload_to_smash(file_path):
+    url = 'https://fromsmash.com/upload'
+    with open(file_path, 'rb') as f:
+        response = requests.post(url, files={'file': f})
+    return response.json().get('url')
+
+# Discord bot setup
+bot = commands.Bot(command_prefix='!')
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user}')
+
+@bot.command()
+async def mirror(ctx, magnet_link):
+    save_path = './downloads'
+    os.makedirs(save_path, exist_ok=True)
+
+    await ctx.send("Downloading magnet link...")
+    downloaded_files = download_magnet(magnet_link, save_path)
+    
+    for file_name in downloaded_files:
+        file_path = os.path.join(save_path, file_name)
+        await ctx.send(f"Uploading {file_path} to Smash...")
+        link = upload_to_smash(file_path)
+        await ctx.send(f"File uploaded! Download link: {link}")
+
+# Run the bot
+bot.run('YOUR_DISCORD_BOT_TOKEN')
+
 
 def run_http_server():
     port = int(os.environ.get("PORT", 5000))
