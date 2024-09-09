@@ -150,7 +150,7 @@ def upload_to_transfersh(file_path):
     else:
         return None
 
-@client.event
+@bot.command()
 async def on_message(message):
     if message.content.startswith('!mirror'):
         magnet_link = message.content[len('!mirror '):].strip()
