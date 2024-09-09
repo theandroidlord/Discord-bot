@@ -4,6 +4,8 @@ from discord.ui import Button, View
 from tpblite import TPB
 from dotenv import load_dotenv
 import requests
+import libtorrent as lt
+import time
 import os
 import logging
 from threading import Thread
@@ -130,6 +132,63 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed, view=view)
     else:
         await ctx.send("Movie not found.")
+        
+
+def download_magnet(magnet_link, download_path):
+    ses = lt.session()
+    params = {
+        'save_path': download_path,
+        'storage_mode': lt.storage_mode_t.storage_mode_sparse,
+    }
+    handle = lt.add_magnet_uri(ses, magnet_link, params)
+    ses.start_dht()
+
+    print('Downloading metadata...')
+    while not handle.has_metadata():
+        time.sleep(1)
+    print('Metadata downloaded, starting torrent download...')
+
+    print('Downloading...')
+    while handle.status().state != lt.torrent_status.seeding:
+        s = handle.status()
+        print(f'Download rate: {s.download_rate / 1000:.2f} kB/s, '
+              f'Progress: {s.progress * 100:.2f}%')
+        time.sleep(5)
+
+    print('Download complete!')
+    return handle.name()
+
+def upload_to_transfersh(file_path):
+    url = 'https://transfer.sh/'
+    with open(file_path, 'rb') as f:
+        response = requests.post(url, files={'file': f})
+    if response.status_code == 200:
+        print('File uploaded successfully!')
+        return response.text.strip()
+    else:
+        print('Failed to upload file:', response.status_code, response.text)
+        return None
+
+@client.event
+async def on_message(message):
+    if message.content.startswith('!mirror'):
+        magnet_link = message.content[len('!mirror '):].strip()
+        home_directory = os.path.expanduser('~')
+        download_path = os.path.join(home_directory, 'downloads')
+        os.makedirs(download_path, exist_ok=True)
+
+        await message.channel.send('Downloading file from magnet link...')
+        file_name = download_magnet(magnet_link, download_path)
+        file_path = os.path.join(download_path, file_name)
+
+        await message.channel.send('Uploading file to Transfer.sh...')
+        download_link = upload_to_transfersh(file_path)
+        if download_link:
+            await message.channel.send(f'File uploaded successfully! Download link: {download_link}')
+        else:
+            await message.channel.send('Failed to upload file.')
+        
+        
         
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
