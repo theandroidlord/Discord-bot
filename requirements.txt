@@ -4,4 +4,4 @@ python-dotenv
 requests
 speedtest-cli
 pynacl
-libtorrent
+python-libtorrent-bin
