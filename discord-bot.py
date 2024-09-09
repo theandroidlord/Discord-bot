@@ -132,44 +132,6 @@ async def movieinfo(ctx, *, movie_name):
     else:
         await ctx.send("Movie not found.")
         
-def download_magnet(magnet_link, download_path):
-    os.makedirs(download_path, exist_ok=True)
-    command = ['aria2c', '--dir=' + download_path, magnet_link]
-    subprocess.run(command, check=True)
-    for root, dirs, files in os.walk(download_path):
-        for file in files:
-            return os.path.join(root, file)
-    return None
-
-def upload_to_transfersh(file_path):
-    url = 'https://transfer.sh/'
-    with open(file_path, 'rb') as f:
-        response = requests.post(url, files={'file': f})
-    if response.status_code == 200:
-        return response.text.strip()
-    else:
-        return None
-
-@bot.command()
-async def on_message(message):
-    if message.content.startswith('!mirror'):
-        magnet_link = message.content[len('!mirror '):].strip()
-        home_directory = os.path.expanduser('~')
-        download_path = os.path.join(home_directory, 'downloads')
-
-        await message.channel.send('Downloading file from magnet link...')
-        file_path = download_magnet(magnet_link, download_path)
-
-        if file_path:
-            await message.channel.send('Uploading file to Transfer.sh...')
-            download_link = upload_to_transfersh(file_path)
-            if download_link:
-                await message.channel.send(f'File uploaded successfully! Download link: {download_link}')
-            else:
-                await message.channel.send('Failed to upload file.')
-        else:
-            await message.channel.send('Failed to download file.')
-
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
