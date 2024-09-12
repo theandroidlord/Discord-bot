@@ -1,5 +1,7 @@
 import discord
 import asyncio
+import json
+import random
 from discord.ext import commands
 from discord.ui import Button, View
 from tpblite import TPB
@@ -149,7 +151,34 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed, view=view)
     else:
         await ctx.send("Movie not found.")
-        
+       
+HADITH_JSON_PATH = "assets/json/bukhari.json"
+
+
+def get_random_hadith():
+    """
+    Reads the Hadith JSON file, selects a random Hadith, and returns it.
+    """
+    with open(HADITH_JSON_PATH, "r") as f:
+        hadiths = json.load(f)
+    random_hadith = random.choice(hadiths)
+    return random_hadith
+
+@client.command()
+async def hadith(ctx):
+    """
+    Sends a random Hadith
+    """
+    random_hadith = get_random_hadith()
+    hadith_text = random_hadith["translation"]["en"]
+    hadith_number = random_hadith["hadith_number"]
+    reference = random_hadith["reference"]
+
+    # Construct the message
+    message = f"Hadith Number: {hadith_number}\nReference: {reference}\n\n{hadith_text}"
+
+    await ctx.send(message)
+
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
