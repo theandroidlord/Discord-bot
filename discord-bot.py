@@ -112,7 +112,7 @@ async def remind(ctx, minutes: int, *, reminder_text):
         await ctx.send(f"Reminder set for {minutes} minutes.")
 
         async def send_delayed_reminder():
-            await ctx.send(reminder_text)
+            await ctx.send('Hi Your Reminder 🎗️for ' + reminder_text)
 
         await asyncio.sleep(minutes * 60)
         await send_delayed_reminder()
