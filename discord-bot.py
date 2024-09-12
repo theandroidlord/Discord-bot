@@ -14,7 +14,7 @@ from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import speedtest as speedtest_module  # Renaming the import to avoid conflicts
 
-# Load environment variables from .env file
+# Load e nvironment variables from .env file
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
