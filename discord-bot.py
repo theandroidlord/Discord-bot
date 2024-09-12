@@ -101,6 +101,23 @@ async def stop(ctx):
         await ctx.send("Stopped streaming.")
     else:
         await ctx.send("The bot is not connected to a voice channel.")
+@bot.command()
+async def remind(ctx, minutes: int, *, reminder_text):
+    try:
+        if minutes <= 0:
+            await ctx.send("Please enter a positive number of minutes.")
+            return
+
+        await ctx.send(f"Reminder set for {minutes} minutes.")
+
+        async def send_delayed_reminder():
+            await ctx.send(reminder_text)
+
+        await asyncio.sleep(minutes * 60)
+        await send_delayed_reminder()
+    except ValueError:
+        await ctx.send("Invalid reminder format. Please use !remind <minutes> <text>")
+
 
 @bot.command()
 async def movieinfo(ctx, *, movie_name):
