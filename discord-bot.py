@@ -164,7 +164,7 @@ def get_random_hadith():
     random_hadith = random.choice(hadiths)
     return random_hadith
 
-@client.command()
+@bot.command()
 async def hadith(ctx):
     """
     Sends a random Hadith
