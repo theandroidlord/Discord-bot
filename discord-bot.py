@@ -10,7 +10,10 @@ import os
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import speedtest as speedtest_module  # Renaming the import to avoid conflicts
+import speedtest as speedtest_module  
+from seedr_client import SeedrHandler
+import time
+# Renaming the import to avoid conflicts
 
 # Load e nvironment variables from .env file
 load_dotenv()
@@ -119,7 +122,6 @@ async def remind(ctx, minutes: int, *, reminder_text):
     except ValueError:
         await ctx.send("Invalid reminder format. Please use !remind <minutes> <text>")
 
-
 @bot.command()
 async def movieinfo(ctx, *, movie_name):
     url = f"https://www.omdbapi.com/?t={movie_name}&apikey={OMDB_API_KEY}"
@@ -150,6 +152,74 @@ async def movieinfo(ctx, *, movie_name):
     else:
         await ctx.send("Movie not found.")
        
+
+
+# Replace these with your Seedr credentials
+SEEDR_EMAIL = os.getenv('SEEDR_EMAIL')
+SEEDR_PASSWORD = os.getenv('SEEDR_PASSWORD')
+
+# Initialize Seedr client
+seedr = SeedrHandler(email=SEEDR_EMAIL, password=SEEDR_PASSWORD)
+
+current_task = None
+
+@bot.command()
+async def clear(ctx):
+    # Clear all files and folders from Seedr
+    drive_info = seedr.get_drive()
+    for folder in drive_info['folders']:
+        seedr.delete_folder(folder['folder_id'])
+    for file in drive_info['files']:
+        seedr.delete_file(file['file_id'])
+    await ctx.send('All files and folders have been cleared from Seedr.')
+
+@bot.command()
+async def mirror(ctx, torrent_url):
+    global current_task
+    if current_task:
+        await ctx.send('A task is already running. Please wait or cancel the current task.')
+        return
+
+    current_task = 'mirroring'
+    result = seedr.add_torrent(torrent_url)
+    await ctx.send(f'Torrent added: {result}')
+
+    # Wait for the torrent to complete
+    while current_task == 'mirroring':
+        drive_info = seedr.get_drive()
+        torrents = drive_info['torrents']
+        if not torrents:
+            break
+        time.sleep(10)  # Check every 10 seconds
+
+    if current_task == 'mirroring':
+        # Get download links of files in the folder
+        drive_info = seedr.get_drive()
+        files = drive_info['files']
+        download_links = [f"{file['name']}: {file['url']}" for file in files]
+        await ctx.send(f'Download links:\n' + '\n'.join(download_links))
+
+    current_task = None
+
+@bot.command()
+async def cancel(ctx):
+    global current_task
+    if current_task:
+        current_task = None
+        await ctx.send('The current task has been cancelled.')
+    else:
+        await ctx.send('No task is currently running.')
+
+@bot.command()
+async def status(ctx):
+    global current_task
+    if current_task:
+        await ctx.send(f'The current task is: {current_task}')
+    else:
+        await ctx.send('No task is currently running.')
+
+
+
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):

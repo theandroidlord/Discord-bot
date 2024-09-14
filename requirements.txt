@@ -4,6 +4,8 @@ python-dotenv
 requests
 speedtest-cli
 pynacl
+SeedrClient
+
 
 
 
