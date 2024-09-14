@@ -16,9 +16,9 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-from discord.ext import commands
 from tqdm import tqdm
 import time
+import asyncio
 
 # Renaming the import to avoid conflicts
 
@@ -161,7 +161,7 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send("Movie not found.")
         
         
-def download_file(url, local_filename):
+async def download_file(url, local_filename, ctx):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     block_size = 1024  # 1 Kilobyte
@@ -175,6 +175,8 @@ def download_file(url, local_filename):
             elapsed_time = time.time() - start_time
             speed = t.n / elapsed_time if elapsed_time > 0 else 0
             t.set_postfix(speed=f'{speed:.2f} iB/s')
+            if t.n % (block_size * 100) == 0:  # Update every 100 KB
+                await ctx.send(f'Downloading... {t.n / total_size:.2%} complete at {speed:.2f} iB/s')
     t.close()
 
     if total_size != 0 and t.n != total_size:
@@ -182,7 +184,7 @@ def download_file(url, local_filename):
 
     return local_filename
 
-def upload_file(file_path):
+async def upload_file(file_path, ctx):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -206,7 +208,7 @@ def upload_file(file_path):
             elapsed_time = time.time() - start_time
             uploaded_size = os.path.getsize(file_path)
             speed = uploaded_size / elapsed_time if elapsed_time > 0 else 0
-            print(f'Upload speed: {speed:.2f} iB/s')
+            await ctx.send(f'Uploading... {uploaded_size / os.path.getsize(file_path):.2%} complete at {speed:.2f} iB/s')
             time.sleep(1)
 
     driver.quit()
@@ -218,12 +220,12 @@ async def mirror(ctx, url):
     try:
         # Download the file
         await ctx.send('Downloading file...')
-        download_file(url, local_filename)
+        await download_file(url, local_filename, ctx)
         await ctx.send('File downloaded successfully.')
 
         # Upload the file to FileTransfer.io
         await ctx.send('Uploading file...')
-        link = upload_file(local_filename)
+        link = await upload_file(local_filename, ctx)
         await ctx.send(f'File uploaded: {link}')
     except Exception as e:
         await ctx.send(f'An error occurred: {e}')
