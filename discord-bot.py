@@ -10,7 +10,17 @@ import os
 import logging
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import speedtest as speedtest_module  # Renaming the import to avoid conflicts
+import speedtest as speedtest_module  
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from discord.ext import commands
+from tqdm import tqdm
+import time
+
+# Renaming the import to avoid conflicts
 
 # Load e nvironment variables from .env file
 load_dotenv()
@@ -149,6 +159,78 @@ async def movieinfo(ctx, *, movie_name):
         await ctx.send(embed=embed, view=view)
     else:
         await ctx.send("Movie not found.")
+        
+        
+def download_file(url, local_filename):
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024  # 1 Kilobyte
+    t = tqdm(total=total_size, unit='iB', unit_scale=True)
+    start_time = time.time()
+
+    with open(local_filename, 'wb') as file:
+        for data in response.iter_content(block_size):
+            t.update(len(data))
+            file.write(data)
+            elapsed_time = time.time() - start_time
+            speed = t.n / elapsed_time if elapsed_time > 0 else 0
+            t.set_postfix(speed=f'{speed:.2f} iB/s')
+    t.close()
+
+    if total_size != 0 and t.n != total_size:
+        raise Exception("Error in downloading file")
+
+    return local_filename
+
+def upload_file(file_path):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get('https://filetransfer.io/')
+
+    # Locate the file input element and upload the file
+    file_input = driver.find_element(By.XPATH, '//input[@type="file"]')
+    file_input.send_keys(file_path)
+
+    # Wait for the upload to complete and get the download link
+    start_time = time.time()
+    while True:
+        try:
+            download_link = driver.find_element(By.XPATH, '//a[@class="download-link"]').get_attribute('href')
+            break
+        except:
+            elapsed_time = time.time() - start_time
+            uploaded_size = os.path.getsize(file_path)
+            speed = uploaded_size / elapsed_time if elapsed_time > 0 else 0
+            print(f'Upload speed: {speed:.2f} iB/s')
+            time.sleep(1)
+
+    driver.quit()
+    return download_link
+
+@bot.command()
+async def mirror(ctx, url):
+    local_filename = 'downloaded_file'
+    try:
+        # Download the file
+        await ctx.send('Downloading file...')
+        download_file(url, local_filename)
+        await ctx.send('File downloaded successfully.')
+
+        # Upload the file to FileTransfer.io
+        await ctx.send('Uploading file...')
+        link = upload_file(local_filename)
+        await ctx.send(f'File uploaded: {link}')
+    except Exception as e:
+        await ctx.send(f'An error occurred: {e}')
+    finally:
+        if os.path.exists(local_filename):
+            os.remove(local_filename)
+
        
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):

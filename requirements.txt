@@ -4,3 +4,7 @@ python-dotenv
 requests
 speedtest-cli
 pynacl
+selenium
+webdriver-manager
+discord.py
+tqdm
