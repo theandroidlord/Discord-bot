@@ -9,3 +9,5 @@ webdriver-manager
 discord.py
 tqdm
 
+
+

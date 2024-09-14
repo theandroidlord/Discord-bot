@@ -1,16 +1,3 @@
-import discord
-import asyncio
-from discord.ext import commands
-from discord.ui import Button, View
-from tpblite import TPB
-from dotenv import load_dotenv
-import requests
-import subprocess
-import os
-import logging
-from threading import Thread
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import speedtest as speedtest_module  
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -160,7 +147,6 @@ async def movieinfo(ctx, *, movie_name):
     else:
         await ctx.send("Movie not found.")
         
-        
 async def download_file(url, local_filename, ctx):
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
@@ -173,10 +159,10 @@ async def download_file(url, local_filename, ctx):
             t.update(len(data))
             file.write(data)
             elapsed_time = time.time() - start_time
-            speed = t.n / elapsed_time if elapsed_time > 0 else 0
-            t.set_postfix(speed=f'{speed:.2f} iB/s')
+            speed = (t.n / elapsed_time) / (1024 * 1024) if elapsed_time > 0 else 0  # Speed in MBps
+            t.set_postfix(speed=f'{speed:.2f} MBps')
             if t.n % (block_size * 100) == 0:  # Update every 100 KB
-                await ctx.send(f'Downloading... {t.n / total_size:.2%} complete at {speed:.2f} iB/s')
+                await ctx.send(f'Downloading... {t.n / total_size:.2%} complete at {speed:.2f} MBps')
     t.close()
 
     if total_size != 0 and t.n != total_size:
@@ -207,16 +193,25 @@ async def upload_file(file_path, ctx):
         except:
             elapsed_time = time.time() - start_time
             uploaded_size = os.path.getsize(file_path)
-            speed = uploaded_size / elapsed_time if elapsed_time > 0 else 0
-            await ctx.send(f'Uploading... {uploaded_size / os.path.getsize(file_path):.2%} complete at {speed:.2f} iB/s')
+            speed = (uploaded_size / elapsed_time) / (1024 * 1024) if elapsed_time > 0 else 0  # Speed in MBps
+            await ctx.send(f'Uploading... {uploaded_size / os.path.getsize(file_path):.2%} complete at {speed:.2f} MBps')
             time.sleep(1)
 
     driver.quit()
     return download_link
-
+    
+current_task = None
 @bot.command()
 async def mirror(ctx, url):
+    global current_task
+    if current_task:
+        await ctx.send('A task is already running. Please wait for it to complete or use !stopmirror to cancel it.')
+        return
+
     local_filename = 'downloaded_file'
+    current_task = asyncio.create_task(mirror_task(ctx, url, local_filename))
+
+async def mirror_task(ctx, url, local_filename):
     try:
         # Download the file
         await ctx.send('Downloading file...')
@@ -232,7 +227,25 @@ async def mirror(ctx, url):
     finally:
         if os.path.exists(local_filename):
             os.remove(local_filename)
+        global current_task
+        current_task = None
 
+@bot.command()
+async def status(ctx):
+    if current_task:
+        await ctx.send('A task is currently running. Please wait for it to complete.')
+    else:
+        await ctx.send('No task is currently running.')
+
+@bot.command()
+async def stopmirror(ctx):
+    global current_task
+    if current_task:
+        current_task.cancel()
+        current_task = None
+        await ctx.send('The current task has been stopped.')
+    else:
+        await ctx.send('No task is currently running.')
        
 # Simple HTTP server to satisfy Render's port binding requirement
 class SimpleHandler(BaseHTTPRequestHandler):
